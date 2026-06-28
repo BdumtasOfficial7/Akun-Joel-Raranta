@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tempo Master Challenge</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#eef3ff}
+header{background:#234;color:#fff;padding:14px;text-align:center}
+nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px}
+button{padding:10px 14px;border:none;border-radius:8px;cursor:pointer}
+.card{max-width:900px;margin:10px auto;background:#fff;padding:16px;border-radius:12px;box-shadow:0 2px 8px #0002}
+.hidden{display:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.choice{width:100%}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ccc;padding:6px;text-align:left}
+#met{height:14px;background:#ddd;border-radius:7px;overflow:hidden}
+#bar{height:100%;width:0%}
+</style>
+</head>
+<body>
+<header><h1>🎼 Tempo Master Challenge</h1><div>Belajar • Quiz • Survival</div></header>
+<nav>
+<button onclick="show('learn')">Mode Belajar</button>
+<button onclick="startQuiz(false)">Mode Quiz</button>
+<button onclick="startQuiz(true)">Mode Survival</button>
+</nav>
+
+<div id="learn" class="card">
+<h2>Daftar Tempo</h2>
+<input id="search" placeholder="Cari tempo..." oninput="renderLearn()">
+<div id="learnList"></div>
+</div>
+
+<div id="quiz" class="card hidden">
+<div>⭐ Skor: <span id="score">0</span> | ❤️ Nyawa: <span id="life">3</span> | ⏱️ <span id="timer">20</span></div>
+<h2 id="qtitle"></h2>
+<div id="met"><div id="bar"></div></div>
+<div id="choices" class="grid" style="margin-top:10px"></div>
+<div id="feedback"></div>
+<button id="nextBtn" class="hidden" onclick="nextQ()">Soal Berikutnya</button>
+</div>
+
+<script>
+const tempos=[
+["Larghissimo","Sangat, sangat lambat","<20 BPM"],
+["Grave","Sangat lambat dan berat","20–40 BPM"],
+["Largo","Lambat, luas, megah","40–60 BPM"],
+["Lento","Lambat","45–60 BPM"],
+["Larghetto","Sedikit lebih cepat dari Largo","60–66 BPM"],
+["Adagio","Perlahan dan tenang","66–76 BPM"],
+["Adagietto","Sedikit lebih cepat dari Adagio","72–76 BPM"],
+["Andante","Seperti langkah berjalan","76–108 BPM"],
+["Andantino","Sedikit lebih cepat dari Andante","80–108 BPM"],
+["Marcia Moderato","Tempo seperti mars","83–85 BPM"],
+["Andante Moderato","Di antara Andante dan Moderato","92–112 BPM"],
+["Moderato","Kecepatan sedang","108–120 BPM"],
+["Allegretto","Agak cepat","112–120 BPM"],
+["Allegro Moderato","Allegro yang sedikit lebih tenang","116–120 BPM"],
+["Allegro","Cepat dan ceria","120–156 BPM"],
+["Vivace","Cepat dan hidup","156–176 BPM"],
+["Vivacissimo","Sangat hidup dan sangat cepat","172–176 BPM"],
+["Allegrissimo","Lebih cepat dari Allegro","172–176 BPM"],
+["Presto","Sangat cepat","168–200 BPM"],
+["Prestissimo","Tempo tercepat","≥200 BPM"]
+];
+function show(id){
+ document.getElementById('learn').classList.add('hidden');
+ document.getElementById('quiz').classList.add('hidden');
+ document.getElementById(id).classList.remove('hidden');
+}
+function renderLearn(){
+ const s=document.getElementById('search').value.toLowerCase();
+ let h="<table><tr><th>Tempo</th><th>Definisi</th><th>BPM</th></tr>";
+ tempos.filter(t=>t[0].toLowerCase().includes(s)).forEach(t=>{
+  h+=`<tr><td>${t[0]}</td><td>${t[1]}</td><td>${t[2]}</td></tr>`;
+ });
+ h+="</table>";
+ document.getElementById('learnList').innerHTML=h;
+}
+renderLearn();
+
+let score=0,life=3,current=null,t=20,intv,survival=false;
+function startQuiz(s){
+ survival=s;score=0;life=3;
+ document.getElementById('score').textContent=score;
+ document.getElementById('life').textContent=life;
+ show('quiz');nextQ();
+}
+function nextQ(){
+ clearInterval(intv);
+ document.getElementById('feedback').innerHTML="";
+ document.getElementById('nextBtn').classList.add('hidden');
+ t=20;document.getElementById('timer').textContent=t;
+ current=tempos[Math.floor(Math.random()*tempos.length)];
+ document.getElementById('qtitle').innerHTML=`Apa definisi dari <b>${current[0]}</b>?`;
+ let opts=[current[1]];
+ while(opts.length<4){
+  let d=tempos[Math.floor(Math.random()*tempos.length)][1];
+  if(!opts.includes(d))opts.push(d);
+ }
+ opts.sort(()=>Math.random()-0.5);
+ let html="";
+ opts.forEach(o=>html+=`<button class="choice" onclick="answer('${o.replace(/'/g,"&#39;")}')">${o}</button>`);
+ document.getElementById('choices').innerHTML=html;
+ intv=setInterval(()=>{
+   t--;
+   document.getElementById('timer').textContent=t;
+   document.getElementById('bar').style.width=((20-t)/20*100)+"%";
+   if(t<=0){clearInterval(intv);wrong();}
+ },1000);
+}
+function answer(a){
+ clearInterval(intv);
+ if(a===current[1]){
+   score+=10;
+   document.getElementById('score').textContent=score;
+   document.getElementById('feedback').innerHTML=
+   `<h3>✅ Benar</h3><p><b>${current[0]}</b></p><p>${current[1]}</p><p><b>BPM:</b> ${current[2]}</p>`;
+ }else{wrong();return;}
+ document.getElementById('nextBtn').classList.remove('hidden');
+}
+function wrong(){
+ life--;
+ document.getElementById('life').textContent=life;
+ document.getElementById('feedback').innerHTML=
+ `<h3>❌ Salah</h3><p>Jawaban: <b>${current[1]}</b></p><p><b>BPM:</b> ${current[2]}</p>`;
+ if(life<=0){
+   document.getElementById('choices').innerHTML="";
+   document.getElementById('feedback').innerHTML+=`<h2>Game Over</h2><p>Skor Akhir: ${score}</p><p>Memory Score: ${Math.min(100,score)}%</p>`;
+   return;
+ }
+ if(survival){document.getElementById('nextBtn').classList.remove('hidden');}
+ else document.getElementById('nextBtn').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
